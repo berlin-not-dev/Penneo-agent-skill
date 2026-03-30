@@ -1,6 +1,11 @@
 # Penneo Signing Skill
 
-This skill enables a user to send documents for signing using **Penneo** — a document signing platform that creates authentic digital evidence. When a user wants to send a document for signing, follow the steps below. Keep all interactions in plain, friendly language — avoid exposing JSON structures, API details, or technical implementation unless the user explicitly asks for them.
+This skill enables a user to interact with **Penneo** — a document signing platform that creates authentic digital evidence. It supports the following capabilities:
+
+- **Send documents for signing** — upload PDFs, add signers, and optionally enforce a signing order
+- **Check signing status** — look up the current status of a case file and see which signers have signed
+
+Keep all interactions in plain, friendly language — avoid exposing JSON structures, API details, or technical implementation unless the user explicitly asks for them.
 
 ---
 
