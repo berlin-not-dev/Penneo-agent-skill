@@ -53,6 +53,7 @@ const title = get("--title")[0];
 const files = get("--files");
 const signerArgs = get("--signers");
 const sequential = args.includes("--sequential");
+const extraArg = get("--extra")[0] ?? null;
 
 if (!title || !files.length || !signerArgs.length) {
   console.error("Usage: node send-for-signing.js --title <title> --files <file1> [file2] --signers \"Name:email\" [\"Name2:email2\"] [--sequential]");
@@ -85,7 +86,8 @@ const documents = files.map((f) => ({
   name: path.basename(f),
 }));
 
-const caseFileData = { caseFile: { title, signers, documents } };
+const extra = extraArg ? JSON.parse(extraArg) : {};
+const caseFileData = { caseFile: { title, signers, documents, ...extra } };
 
 // --- Build multipart/form-data request ---
 const form = new FormData();

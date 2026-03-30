@@ -3,6 +3,8 @@
 This skill enables a user to interact with **Penneo** — a document signing platform that creates authentic digital evidence. It supports the following capabilities:
 
 - **Send documents for signing** — upload PDFs, add signers, and optionally enforce a signing order
+- **Check signing status** — look up the current status of a specific case file and see which signers have signed
+- **List and summarise case files** — get an overview of case files filtered by status (pending, completed, rejected, draft, expired) or all at once
 - **Check signing status** — look up the current status of a case file and see which signers have signed
 
 Keep all interactions in plain, friendly language — avoid exposing JSON structures, API details, or technical implementation unless the user explicitly asks for them.
@@ -137,6 +139,112 @@ Once complete, the script outputs a signing link for each signer. Share these wi
 > "Done! Here are the signing links — share these with your signers:
 > - Jane Doe: https://sandbox.penneo.com/signing/XXXXX
 > - John Smith: https://sandbox.penneo.com/signing/XXXXX"
+
+---
+
+## Additional Case File Options
+
+Do **not** ask about these upfront. Only use them if the user specifically requests it. Pass them via `--extra` as a JSON string merged into the case file.
+
+```bash
+# Node.js
+node scripts/node/send-for-signing.js \
+  --title "Contract" \
+  --files "./contract.pdf" \
+  --signers "Jane Doe:jane@example.com" \
+  --extra '{"language":"en","ccRecipients":[{"name":"Legal Team","email":"legal@company.com"}]}'
+
+# Python
+python scripts/python/send-for-signing.py \
+  --title "Contract" \
+  --files "./contract.pdf" \
+  --signers "Jane Doe:jane@example.com" \
+  --extra '{"language":"en","ccRecipients":[{"name":"Legal Team","email":"legal@company.com"}]}'
+```
+
+### Supported extra fields
+
+| User asks | Field to include in `--extra` JSON |
+|-----------|-----------------------------------|
+| "send it in Danish / French / etc." | `"language": "da"` (or `"en"`, `"sv"`, `"nb"`, `"fr"`, etc.) |
+| "also notify legal@company.com when done" | `"ccRecipients": [{"name": "Legal Team", "email": "legal@company.com"}]` |
+| "expires in 7 days" / "set an expiry" | `"expireAt": <Unix timestamp>` |
+| "remind them every 3 days" | Set on the signer object: `"reminderInterval": 3` |
+| "use a custom email subject/body" | Set on the signer object: `"emailSubject": "..."`, `"emailText": "..."` |
+| "send a reminder email when done" | Set on the signer object: `"completedEmailSubject": "..."`, `"completedEmailText": "..."` |
+| "redirect to X after signing" | Set on the signer object: `"successUrl": "https://..."` |
+| "redirect to X if they reject" | Set on the signer object: `"failUrl": "https://..."` |
+| "require signers to authenticate" | Set on the signer object: `"accessControl": true` |
+| "don't attach the signed doc to emails" | `"disableEmailAttachments": true` |
+| "mark as sensitive data" | `"sensitiveData": true` |
+| "don't notify me when it's done" | `"disableNotificationsOwner": true` |
+
+**Signer-level fields** go inside each signer object in the signers array — not at the top level. When combining top-level and signer-level fields, build the full `--extra` JSON accordingly.
+
+---
+
+## Listing and Summarising Case Files
+
+When the user asks for an overview of their case files, run the list-casefiles script. It supports flexible filtering via `--status` and `--filter key=value` (repeatable). Pagination is handled automatically.
+
+```bash
+# Node.js examples
+node scripts/node/list-casefiles.js
+node scripts/node/list-casefiles.js --status pending
+node scripts/node/list-casefiles.js --status completed --filter sort=-created
+node scripts/node/list-casefiles.js --filter title=Contract --filter createdAfter=1735689600
+
+# Python examples
+python scripts/python/list-casefiles.py --status pending
+python scripts/python/list-casefiles.py --filter sort=-created --filter completedAfter=1735689600
+```
+
+Present results conversationally — never show raw script output. For example:
+
+> "You have 3 pending case files:
+> - **Employment Contract** (ID 1262132) — waiting on Mads to sign, expires 23 Jun 2025
+> - **NDA with Acme** (ID 1262209) — waiting on Nikita to sign, expires 25 Jun 2025"
+
+If the user asks a follow-up about a specific case file, use the check-status script with the ID.
+
+### Query Parameter Reference
+
+Use this table to translate user requests into the right `--filter` combinations. Date filters take **Unix timestamps** — always convert natural language dates (e.g. "this month", "last week", "in March") to Unix timestamps before passing them.
+
+| User says | Script flags to use |
+|-----------|-------------------|
+| "show me pending cases" | `--status pending` |
+| "show me completed cases" | `--status completed` |
+| "show me rejected cases" | `--status rejected` |
+| "show me drafts" | `--status draft` |
+| "show me expired cases" | `--status expired` |
+| "show me everything" | *(no flags)* |
+| "cases with 'NDA' in the title" | `--filter title=NDA` |
+| "cases created this month" | `--filter createdAfter=<start of month timestamp>` |
+| "cases created in March" | `--filter createdAfter=<Mar 1 timestamp> --filter createdBefore=<Apr 1 timestamp>` |
+| "cases completed last week" | `--filter completedAfter=<timestamp> --filter completedBefore=<timestamp>` |
+| "cases expiring soon" | `--filter expiresAfter=<now> --filter expiresBefore=<30 days from now>` |
+| "cases updated today" | `--filter updatedAfter=<start of today timestamp>` |
+| "show newest first" | `--filter sort=-created` |
+| "sort alphabetically" | `--filter sort=title` |
+| "pending NDAs sorted by newest" | `--status pending --filter title=NDA --filter sort=-created` |
+
+### Available filter keys
+
+| Key | Description |
+|-----|-------------|
+| `title` | Match string in title |
+| `status` | Handled via `--status` flag (draft/pending/rejected/completed/expired) |
+| `createdAfter` / `createdBefore` | Unix timestamp — filter by creation date |
+| `completedAfter` / `completedBefore` | Unix timestamp — filter by completion date |
+| `activatedAfter` / `activatedBefore` | Unix timestamp — filter by activation date |
+| `expiresAfter` / `expiresBefore` | Unix timestamp — filter by expiry date |
+| `updatedAfter` / `updatedBefore` | Unix timestamp — filter by last updated date |
+| `sort` | Field to sort by. Prepend `-` for descending (e.g. `-created`, `-title`) |
+| `ids` | Comma-separated case file IDs |
+| `folderIds` | Comma-separated folder IDs |
+| `metaData` | Match string in metadata |
+| `reference` | External reference ID |
 
 ---
 
