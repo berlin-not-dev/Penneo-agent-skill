@@ -1,6 +1,12 @@
 # Penneo Signing Skill
 
-This skill enables a user to send documents for signing using **Penneo** — a document signing platform that creates authentic digital evidence. When a user wants to send a document for signing, follow the steps below. Keep all interactions in plain, friendly language — avoid exposing JSON structures, API details, or technical implementation unless the user explicitly asks for them.
+This skill enables a user to interact with **Penneo** — a document signing platform that creates authentic digital evidence. It supports the following capabilities:
+
+- **Send documents for signing** — upload PDFs, add signers, and optionally enforce a signing order
+- **Check signing status** — look up the current status of a specific case file and see which signers have signed
+- **List and summarise case files** — get an overview of case files filtered by status (pending, completed, rejected, draft, expired) or all at once
+
+Keep all interactions in plain, friendly language — avoid exposing JSON structures, API details, or technical implementation unless the user explicitly asks for them.
 
 ---
 
@@ -110,6 +116,39 @@ Once complete, the script outputs a signing link for each signer. Share these wi
 > "Done! Here are the signing links — share these with your signers:
 > - Jane Doe: https://sandbox.penneo.com/signing/XXXXX
 > - John Smith: https://sandbox.penneo.com/signing/XXXXX"
+
+---
+
+## Listing and Summarising Case Files
+
+When the user asks for an overview — e.g. "show me all pending cases", "which casefiles have been rejected?", "give me a summary of everything" — run the list-casefiles script with the appropriate status filter.
+
+```bash
+# Node.js
+node scripts/node/list-casefiles.js                      # All case files
+node scripts/node/list-casefiles.js --status pending     # Waiting for signatures
+node scripts/node/list-casefiles.js --status completed   # Fully signed
+node scripts/node/list-casefiles.js --status rejected    # Rejected by a signer
+node scripts/node/list-casefiles.js --status draft       # Not yet sent
+node scripts/node/list-casefiles.js --status expired     # Past expiry date
+
+# Python
+python scripts/python/list-casefiles.py                  # All case files
+python scripts/python/list-casefiles.py --status pending
+python scripts/python/list-casefiles.py --status completed
+python scripts/python/list-casefiles.py --status rejected
+python scripts/python/list-casefiles.py --status draft
+python scripts/python/list-casefiles.py --status expired
+```
+
+The script paginates automatically and returns each case file with its title, status, expiry date, and per-signer signing status. Present the results conversationally — for example:
+
+> "You have 3 pending case files:
+> - **Employment Contract** (ID 1262132) — waiting on Mads to sign, expires 23 Jun 2025
+> - **NDA with Acme** (ID 1262209) — waiting on Nikita to sign, expires 25 Jun 2025
+> - ..."
+
+If the user asks a follow-up about a specific case file, use the check-status script with the ID.
 
 ---
 
