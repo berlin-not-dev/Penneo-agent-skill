@@ -5,6 +5,7 @@ This skill enables a user to interact with **Penneo** — a document signing pla
 - **Send documents for signing** — upload PDFs, add signers, and optionally enforce a signing order
 - **Check signing status** — look up the current status of a specific case file and see which signers have signed
 - **List and summarise case files** — get an overview of case files filtered by status (pending, completed, rejected, draft, expired) or all at once
+- **Check signing status** — look up the current status of a case file and see which signers have signed
 
 Keep all interactions in plain, friendly language — avoid exposing JSON structures, API details, or technical implementation unless the user explicitly asks for them.
 
@@ -108,6 +109,28 @@ python scripts/python/send-for-signing.py \
 - `--files` accepts one or more PDF file paths.
 - `--signers` accepts one or more `"Full Name:email@example.com"` pairs.
 - `--sequential` is optional — include it if the user wants signers to sign in order.
+
+---
+
+## Checking the Status of a Signing Request
+
+If the user asks about the status of a signing request, run the check-status script with the case file ID:
+
+```bash
+# Node.js
+node scripts/node/check-status.js --casefile-id 1262730
+
+# Python
+python scripts/python/check-status.py --casefile-id 1262730
+```
+
+The script will return the overall status and which signers have signed. Translate the output into friendly language:
+
+> "Your signing request 'Contract Agreement' is still pending — Mads has signed but Nikita is still waiting to sign."
+
+> "Great news — 'Contract Agreement' has been completed and signed by everyone!"
+
+---
 
 ### Step 4 — Share the Signing Links
 
