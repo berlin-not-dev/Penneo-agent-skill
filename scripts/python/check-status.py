@@ -41,6 +41,17 @@ STATUSES = {
     7: "Expired",
 }
 
+SIGNER_STATUSES = {
+    0: "Request sent",
+    1: "Request opened",
+    2: "Opened",
+    3: "Signed",
+    4: "Rejected",
+    6: "Undeliverable",
+    8: "Finalized",
+    9: "Deleted",
+}
+
 parser = argparse.ArgumentParser()
 parser.add_argument("--casefile-id", required=True)
 args = parser.parse_args()
@@ -63,11 +74,6 @@ print(f"Status: {status_label}")
 if data.get("signers"):
     print("\nSigners:")
     for signer in data["signers"]:
-        signed = any(
-            sl.get("signedAt")
-            for doc in data.get("documents", [])
-            for sl in doc.get("signatureLines", [])
-            if sl.get("signerId") == signer["id"]
-        )
-        signed_label = "Signed" if signed else "Awaiting signature"
-        print(f"  {signer['name']}: {signed_label}")
+        signer_status = signer.get("signingRequest", {}).get("status")
+        status_label = SIGNER_STATUSES.get(signer_status, f"Unknown ({signer_status})")
+        print(f"  {signer['name']}: {status_label}")

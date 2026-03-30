@@ -34,6 +34,17 @@ const STATUSES = {
   7: "Expired",
 };
 
+const SIGNER_STATUSES = {
+  0: "Request sent",
+  1: "Request opened",
+  2: "Opened",
+  3: "Signed",
+  4: "Rejected",
+  6: "Undeliverable",
+  8: "Finalized",
+  9: "Deleted",
+};
+
 const args = process.argv.slice(2);
 const idIndex = args.indexOf("--casefile-id");
 const caseFileId = idIndex !== -1 ? args[idIndex + 1] : null;
@@ -61,11 +72,8 @@ console.log(`Status: ${statusLabel}`);
 if (data.signers?.length) {
   console.log("\nSigners:");
   for (const signer of data.signers) {
-    const signed = data.documents?.some((doc) =>
-      doc.signatureLines?.some(
-        (sl) => sl.signerId === signer.id && sl.signedAt
-      )
-    );
-    console.log(`  ${signer.name}: ${signed ? "Signed" : "Awaiting signature"}`);
+    const signerStatus = signer.signingRequest?.status;
+    const statusLabel = SIGNER_STATUSES[signerStatus] ?? `Unknown (${signerStatus})`;
+    console.log(`  ${signer.name}: ${statusLabel}`);
   }
 }
