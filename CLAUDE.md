@@ -119,6 +119,47 @@ Once complete, the script outputs a signing link for each signer. Share these wi
 
 ---
 
+## Additional Case File Options
+
+Do **not** ask about these upfront. Only use them if the user specifically requests it. Pass them via `--extra` as a JSON string merged into the case file.
+
+```bash
+# Node.js
+node scripts/node/send-for-signing.js \
+  --title "Contract" \
+  --files "./contract.pdf" \
+  --signers "Jane Doe:jane@example.com" \
+  --extra '{"language":"en","ccRecipients":[{"name":"Legal Team","email":"legal@company.com"}]}'
+
+# Python
+python scripts/python/send-for-signing.py \
+  --title "Contract" \
+  --files "./contract.pdf" \
+  --signers "Jane Doe:jane@example.com" \
+  --extra '{"language":"en","ccRecipients":[{"name":"Legal Team","email":"legal@company.com"}]}'
+```
+
+### Supported extra fields
+
+| User asks | Field to include in `--extra` JSON |
+|-----------|-----------------------------------|
+| "send it in Danish / French / etc." | `"language": "da"` (or `"en"`, `"sv"`, `"nb"`, `"fr"`, etc.) |
+| "also notify legal@company.com when done" | `"ccRecipients": [{"name": "Legal Team", "email": "legal@company.com"}]` |
+| "expires in 7 days" / "set an expiry" | `"expireAt": <Unix timestamp>` |
+| "remind them every 3 days" | Set on the signer object: `"reminderInterval": 3` |
+| "use a custom email subject/body" | Set on the signer object: `"emailSubject": "..."`, `"emailText": "..."` |
+| "send a reminder email when done" | Set on the signer object: `"completedEmailSubject": "..."`, `"completedEmailText": "..."` |
+| "redirect to X after signing" | Set on the signer object: `"successUrl": "https://..."` |
+| "redirect to X if they reject" | Set on the signer object: `"failUrl": "https://..."` |
+| "require signers to authenticate" | Set on the signer object: `"accessControl": true` |
+| "don't attach the signed doc to emails" | `"disableEmailAttachments": true` |
+| "mark as sensitive data" | `"sensitiveData": true` |
+| "don't notify me when it's done" | `"disableNotificationsOwner": true` |
+
+**Signer-level fields** go inside each signer object in the signers array — not at the top level. When combining top-level and signer-level fields, build the full `--extra` JSON accordingly.
+
+---
+
 ## Listing and Summarising Case Files
 
 When the user asks for an overview of their case files, run the list-casefiles script. It supports flexible filtering via `--status` and `--filter key=value` (repeatable). Pagination is handled automatically.

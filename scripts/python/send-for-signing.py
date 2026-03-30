@@ -49,6 +49,7 @@ parser.add_argument("--title", required=True)
 parser.add_argument("--files", nargs="+", required=True)
 parser.add_argument("--signers", nargs="+", required=True, help="Format: \"Full Name:email@example.com\"")
 parser.add_argument("--sequential", action="store_true")
+parser.add_argument("--extra", type=str, default=None, help="JSON string merged into the caseFile object")
 args = parser.parse_args()
 
 # --- Validate files ---
@@ -70,7 +71,13 @@ for i, s in enumerate(args.signers):
 
 # --- Build case file data ---
 documents = [{"title": Path(f).stem, "name": Path(f).name} for f in args.files]
-case_file_data = {"caseFile": {"title": args.title, "signers": signers, "documents": documents}}
+case_file = {"title": args.title, "signers": signers, "documents": documents}
+
+if args.extra:
+    extra = json.loads(args.extra)
+    case_file.update(extra)
+
+case_file_data = {"caseFile": case_file}
 
 # --- Submit case file ---
 print(f"\nSubmitting \"{args.title}\" for signing ({ENV})...")
