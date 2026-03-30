@@ -1,14 +1,34 @@
 """
-Penneo — List case files with optional status filter.
+Penneo — List case files with flexible filtering.
 Handles pagination automatically.
 
 Usage:
-  python list-casefiles.py                        # All case files
-  python list-casefiles.py --status pending       # Pending only
-  python list-casefiles.py --status completed     # Completed only
-  python list-casefiles.py --status rejected      # Rejected only
-  python list-casefiles.py --status draft         # Drafts only
-  python list-casefiles.py --status expired       # Expired only
+  python list-casefiles.py                                        # All case files
+  python list-casefiles.py --status pending                       # Pending only
+  python list-casefiles.py --status completed                     # Completed only
+  python list-casefiles.py --filter createdAfter=1735689600       # Created after date (Unix timestamp)
+  python list-casefiles.py --filter title=Contract                # Title contains "Contract"
+  python list-casefiles.py --filter sort=title                    # Sort alphabetically
+  python list-casefiles.py --filter sort=-created                 # Sort by newest first
+  python list-casefiles.py --status pending --filter sort=-created --filter title=NDA
+
+Available --filter keys:
+  title             Match string in title
+  createdAfter      Unix timestamp — only return cases created after this date
+  createdBefore     Unix timestamp — only return cases created before this date
+  completedAfter    Unix timestamp — only return cases completed after this date
+  completedBefore   Unix timestamp — only return cases completed before this date
+  activatedAfter    Unix timestamp
+  activatedBefore   Unix timestamp
+  expiresAfter      Unix timestamp
+  expiresBefore     Unix timestamp
+  updatedAfter      Unix timestamp
+  updatedBefore     Unix timestamp
+  sort              Field to sort by. Prepend '-' for descending. E.g. sort=title, sort=-created
+  ids               Comma-separated case file IDs
+  folderIds         Comma-separated folder IDs
+  metaData          Match string in metadata
+  reference         External reference ID
 
 Requires: ACCESS_TOKEN in environment variables (from authenticate.py).
 Environment: Set PENNEO_ENV=production for production, defaults to sandbox.
@@ -67,14 +87,23 @@ SIGNER_STATUS_LABELS = {
 
 parser = argparse.ArgumentParser()
 parser.add_argument("--status", type=str, help="Filter by status: draft, pending, rejected, completed, expired")
+parser.add_argument("--filter", action="append", metavar="key=value", help="Additional query params (repeatable)")
 args = parser.parse_args()
 
 params = {}
+
 if args.status:
     status_key = args.status.lower()
     if status_key not in STATUS_MAP:
         raise ValueError(f"Unknown status '{args.status}'. Valid options: {', '.join(STATUS_MAP.keys())}")
     params["status"] = STATUS_MAP[status_key]
+
+if args.filter:
+    for f in args.filter:
+        if "=" not in f:
+            raise ValueError(f"Invalid filter format '{f}'. Expected key=value.")
+        key, value = f.split("=", 1)
+        params[key.strip()] = value.strip()
 
 # --- Paginate through all results ---
 def parse_next_link(link_header):
@@ -96,7 +125,7 @@ while url:
 
     casefiles.extend(res.json())
     url = parse_next_link(res.headers.get("Link"))
-    params = None  # Only pass params on the first request
+    params = None
 
 # --- Output ---
 label = args.status.capitalize() if args.status else "All"

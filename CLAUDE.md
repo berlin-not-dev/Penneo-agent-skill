@@ -121,34 +121,66 @@ Once complete, the script outputs a signing link for each signer. Share these wi
 
 ## Listing and Summarising Case Files
 
-When the user asks for an overview — e.g. "show me all pending cases", "which casefiles have been rejected?", "give me a summary of everything" — run the list-casefiles script with the appropriate status filter.
+When the user asks for an overview of their case files, run the list-casefiles script. It supports flexible filtering via `--status` and `--filter key=value` (repeatable). Pagination is handled automatically.
 
 ```bash
-# Node.js
-node scripts/node/list-casefiles.js                      # All case files
-node scripts/node/list-casefiles.js --status pending     # Waiting for signatures
-node scripts/node/list-casefiles.js --status completed   # Fully signed
-node scripts/node/list-casefiles.js --status rejected    # Rejected by a signer
-node scripts/node/list-casefiles.js --status draft       # Not yet sent
-node scripts/node/list-casefiles.js --status expired     # Past expiry date
+# Node.js examples
+node scripts/node/list-casefiles.js
+node scripts/node/list-casefiles.js --status pending
+node scripts/node/list-casefiles.js --status completed --filter sort=-created
+node scripts/node/list-casefiles.js --filter title=Contract --filter createdAfter=1735689600
 
-# Python
-python scripts/python/list-casefiles.py                  # All case files
+# Python examples
 python scripts/python/list-casefiles.py --status pending
-python scripts/python/list-casefiles.py --status completed
-python scripts/python/list-casefiles.py --status rejected
-python scripts/python/list-casefiles.py --status draft
-python scripts/python/list-casefiles.py --status expired
+python scripts/python/list-casefiles.py --filter sort=-created --filter completedAfter=1735689600
 ```
 
-The script paginates automatically and returns each case file with its title, status, expiry date, and per-signer signing status. Present the results conversationally — for example:
+Present results conversationally — never show raw script output. For example:
 
 > "You have 3 pending case files:
 > - **Employment Contract** (ID 1262132) — waiting on Mads to sign, expires 23 Jun 2025
-> - **NDA with Acme** (ID 1262209) — waiting on Nikita to sign, expires 25 Jun 2025
-> - ..."
+> - **NDA with Acme** (ID 1262209) — waiting on Nikita to sign, expires 25 Jun 2025"
 
 If the user asks a follow-up about a specific case file, use the check-status script with the ID.
+
+### Query Parameter Reference
+
+Use this table to translate user requests into the right `--filter` combinations. Date filters take **Unix timestamps** — always convert natural language dates (e.g. "this month", "last week", "in March") to Unix timestamps before passing them.
+
+| User says | Script flags to use |
+|-----------|-------------------|
+| "show me pending cases" | `--status pending` |
+| "show me completed cases" | `--status completed` |
+| "show me rejected cases" | `--status rejected` |
+| "show me drafts" | `--status draft` |
+| "show me expired cases" | `--status expired` |
+| "show me everything" | *(no flags)* |
+| "cases with 'NDA' in the title" | `--filter title=NDA` |
+| "cases created this month" | `--filter createdAfter=<start of month timestamp>` |
+| "cases created in March" | `--filter createdAfter=<Mar 1 timestamp> --filter createdBefore=<Apr 1 timestamp>` |
+| "cases completed last week" | `--filter completedAfter=<timestamp> --filter completedBefore=<timestamp>` |
+| "cases expiring soon" | `--filter expiresAfter=<now> --filter expiresBefore=<30 days from now>` |
+| "cases updated today" | `--filter updatedAfter=<start of today timestamp>` |
+| "show newest first" | `--filter sort=-created` |
+| "sort alphabetically" | `--filter sort=title` |
+| "pending NDAs sorted by newest" | `--status pending --filter title=NDA --filter sort=-created` |
+
+### Available filter keys
+
+| Key | Description |
+|-----|-------------|
+| `title` | Match string in title |
+| `status` | Handled via `--status` flag (draft/pending/rejected/completed/expired) |
+| `createdAfter` / `createdBefore` | Unix timestamp — filter by creation date |
+| `completedAfter` / `completedBefore` | Unix timestamp — filter by completion date |
+| `activatedAfter` / `activatedBefore` | Unix timestamp — filter by activation date |
+| `expiresAfter` / `expiresBefore` | Unix timestamp — filter by expiry date |
+| `updatedAfter` / `updatedBefore` | Unix timestamp — filter by last updated date |
+| `sort` | Field to sort by. Prepend `-` for descending (e.g. `-created`, `-title`) |
+| `ids` | Comma-separated case file IDs |
+| `folderIds` | Comma-separated folder IDs |
+| `metaData` | Match string in metadata |
+| `reference` | External reference ID |
 
 ---
 
