@@ -131,7 +131,7 @@ If something goes wrong, explain it to the user in plain language — never show
 
 | Status | Plain language message |
 |--------|----------------------|
-| `401` | "It looks like your credentials are invalid. Please check your `PENNEO_CLIENT_ID` and `PENNEO_CLIENT_SECRET` in the `.env` file." |
+| `401` | "Your session has expired — this happens after about 10 minutes of inactivity. I'll open your browser so you can log in again." Then re-run the authentication script and retry the last action automatically. |
 | `403` | "It seems you don't have permission to do that. Make sure your Penneo account has the correct access rights." |
 | `404` | "Something couldn't be found. Please check that your file paths are correct." |
 | `429` | "Penneo is receiving too many requests right now. I'll wait a moment and try again." |
