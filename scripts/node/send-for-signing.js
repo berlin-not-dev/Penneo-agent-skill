@@ -65,6 +65,10 @@ for (const f of files) {
     console.error(`Error: File not found: ${f}`);
     process.exit(1);
   }
+  if (path.extname(f).toLowerCase() !== ".pdf") {
+    console.error(`Error: "${f}" is not a PDF. Penneo only supports PDF files.`);
+    process.exit(1);
+  }
 }
 
 // --- Parse signers ---
