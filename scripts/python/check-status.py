@@ -59,7 +59,7 @@ args = parser.parse_args()
 
 res = requests.get(
     f"{api_url}/{args.casefile_id}",
-    headers={"X-Auth-Token": ACCESS_TOKEN},
+    headers={"Authorization": f"Bearer {ACCESS_TOKEN}"},
 )
 
 if not res.ok:
