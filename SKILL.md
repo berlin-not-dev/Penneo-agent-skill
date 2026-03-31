@@ -255,6 +255,14 @@ Use this table to translate user requests into the right `--filter` combinations
 
 ---
 
+## API Reference
+
+For the full OpenAPI specification of the case file creation and job status endpoints, see [references/send-api.json](references/send-api.json).
+
+> **Note:** The send API (`/send/api/v1/`) uses `X-Auth-Token` for authentication. The list/status API (`/api/v1/`) uses `Authorization: Bearer <token>`.
+
+---
+
 ## Environment
 
 | | Sandbox | Production |

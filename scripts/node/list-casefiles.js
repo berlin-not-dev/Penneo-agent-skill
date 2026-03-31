@@ -120,7 +120,13 @@ for (const f of filterArgs) {
 function parseNextLink(linkHeader) {
   if (!linkHeader) return null;
   const match = linkHeader.match(/<([^>]+)>;\s*rel="next"/);
-  return match ? match[1] : null;
+  if (!match) return null;
+  const next = match[1];
+  if (next.startsWith("/")) {
+    const base = new URL(apiUrl);
+    return `${base.protocol}//${base.host}${next}`;
+  }
+  return next;
 }
 
 // --- Paginate through all results ---
@@ -130,7 +136,7 @@ let url = queryString ? `${apiUrl}?${queryString}` : apiUrl;
 
 while (url) {
   const res = await fetch(url, {
-    headers: { "X-Auth-Token": ACCESS_TOKEN, "x-paginate": "true" },
+    headers: { "Authorization": `Bearer ${ACCESS_TOKEN}`, "x-paginate": "true" },
   });
 
   if (!res.ok) {
@@ -143,14 +149,22 @@ while (url) {
   url = parseNextLink(res.headers.get("link"));
 }
 
+// --- Deduplicate by ID (pagination can overlap) ---
+const seen = new Set();
+const unique = casefiles.filter((cf) => {
+  if (seen.has(cf.id)) return false;
+  seen.add(cf.id);
+  return true;
+});
+
 // --- Output ---
 const label = statusArg ? statusArg.charAt(0).toUpperCase() + statusArg.slice(1) : "All";
-console.log(`\n${label} case files (${casefiles.length} found):\n`);
+console.log(`\n${label} case files (${unique.length} found):\n`);
 
-if (!casefiles.length) {
+if (!unique.length) {
   console.log("  No case files found.");
 } else {
-  for (const cf of casefiles) {
+  for (const cf of unique) {
     const status = STATUS_LABELS[cf.status] ?? `Unknown (${cf.status})`;
     const expire = cf.expireAt
       ? new Date(cf.expireAt * 1000).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" })

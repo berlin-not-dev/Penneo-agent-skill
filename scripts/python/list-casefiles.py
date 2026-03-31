@@ -110,14 +110,21 @@ def parse_next_link(link_header):
     if not link_header:
         return None
     match = re.search(r'<([^>]+)>;\s*rel="next"', link_header)
-    return match.group(1) if match else None
+    if not match:
+        return None
+    next_url = match.group(1)
+    if next_url.startswith("/"):
+        from urllib.parse import urlparse
+        base = urlparse(api_url)
+        return f"{base.scheme}://{base.netloc}{next_url}"
+    return next_url
 
 casefiles = []
 url = api_url
 while url:
     res = requests.get(
         url,
-        headers={"X-Auth-Token": ACCESS_TOKEN, "x-paginate": "true"},
+        headers={"Authorization": f"Bearer {ACCESS_TOKEN}", "x-paginate": "true"},
         params=params if url == api_url else None,
     )
     if not res.ok:
@@ -127,14 +134,22 @@ while url:
     url = parse_next_link(res.headers.get("Link"))
     params = None
 
+# --- Deduplicate by ID (pagination can overlap) ---
+seen = set()
+unique = []
+for cf in casefiles:
+    if cf["id"] not in seen:
+        seen.add(cf["id"])
+        unique.append(cf)
+
 # --- Output ---
 label = args.status.capitalize() if args.status else "All"
-print(f"\n{label} case files ({len(casefiles)} found):\n")
+print(f"\n{label} case files ({len(unique)} found):\n")
 
-if not casefiles:
+if not unique:
     print("  No case files found.")
 else:
-    for cf in casefiles:
+    for cf in unique:
         status = STATUS_LABELS.get(cf["status"], f"Unknown ({cf['status']})")
         expire = datetime.fromtimestamp(cf["expireAt"]).strftime("%d %b %Y") if cf.get("expireAt") else "—"
         print(f"  [{cf['id']}] {cf['title']}  |  {status}  |  Expires: {expire}")

@@ -55,7 +55,7 @@ if (!caseFileId) {
 }
 
 const res = await fetch(`${apiUrl}/${caseFileId}`, {
-  headers: { "X-Auth-Token": ACCESS_TOKEN },
+  headers: { "Authorization": `Bearer ${ACCESS_TOKEN}` },
 });
 
 if (!res.ok) {
