@@ -1,4 +1,4 @@
-# Penneo Agent Skill
+# Penneo Skill
 
 An agent skill for sending documents for signing via Penneo, checking signing status, and listing case files.
 
@@ -7,7 +7,7 @@ An agent skill for sending documents for signing via Penneo, checking signing st
 Clone the repository into your agent's skills directory:
 
 ```bash
-git clone https://github.com/berlin-not-dev/Penneo-agent-skill penneo-agent-skill
+git clone https://github.com/berlin-not-dev/Penneo-agent-skill penneo-skill
 ```
 
 ## Setup
