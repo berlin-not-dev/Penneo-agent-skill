@@ -12,7 +12,6 @@ This skill enables a user to interact with **Penneo** — a document signing pla
 - **Send documents for signing** — upload PDFs, add signers, and optionally enforce a signing order
 - **Check signing status** — look up the current status of a specific case file and see which signers have signed
 - **List and summarise case files** — get an overview of case files filtered by status (pending, completed, rejected, draft, expired) or all at once
-- **Check signing status** — look up the current status of a case file and see which signers have signed
 
 Keep all interactions in plain, friendly language — avoid exposing JSON structures, API details, or technical implementation unless the user explicitly asks for them.
 
@@ -44,17 +43,23 @@ PENNEO_CLIENT_SECRET=your_client_secret
 
 ## Scripts
 
-Ready-made scripts are provided for both Node.js and Python. Always use these — never generate new code to handle authentication or casefile creation.
+Ready-made scripts are provided for both Node.js and Python. Always use these — never generate new code to handle authentication, casefile creation, listing, or status checking.
 
 ```
 scripts/
 ├── node/
 │   ├── authenticate.js       # OAuth flow — opens browser, captures token
-│   └── send-for-signing.js   # Submits documents for signing and polls for completion
+│   ├── send-for-signing.js   # Submits documents for signing and polls for completion
+│   ├── list-casefiles.js     # Lists case files with flexible filtering and pagination
+│   └── check-status.js       # Checks the status of a single case file by ID
 ├── python/
 │   ├── authenticate.py       # OAuth flow — opens browser, captures token
-│   └── send-for-signing.py   # Submits documents for signing and polls for completion
+│   ├── send-for-signing.py   # Submits documents for signing and polls for completion
+│   ├── list-casefiles.py     # Lists case files with flexible filtering and pagination
+│   └── check-status.py       # Checks the status of a single case file by ID
 ```
+
+A detailed OpenAPI reference for the send endpoint — including the full signer schema, signing methods, and advanced options — is available at [`references/send-api.json`](references/send-api.json). Consult it when constructing `--extra` JSON for advanced use cases.
 
 Set `PENNEO_ENV=production` in the `.env` file to target production — defaults to sandbox.
 
@@ -113,9 +118,28 @@ python scripts/python/send-for-signing.py \
   --sequential
 ```
 
-- `--files` accepts one or more PDF file paths.
+- `--files` accepts one or more PDF file paths. **Each file must have a unique filename** — duplicate filenames will be rejected by the API.
 - `--signers` accepts one or more `"Full Name:email@example.com"` pairs.
-- `--sequential` is optional — include it if the user wants signers to sign in order.
+- `--sequential` is optional — include it if the user wants signers to sign strictly one after another (assigns signOrder 0, 1, 2...).
+
+**Partial order** (e.g. one person signs first, then the rest sign simultaneously): use `--extra` to override the signers array with custom `signOrder` values. Signers with the same `signOrder` can sign at the same time:
+
+```bash
+# Node.js — Mads signs first (order 0), then Mikkel and Rasmus simultaneously (order 1)
+node scripts/node/send-for-signing.js \
+  --title "Contract" \
+  --files "./contract.pdf" \
+  --signers "Mads:mads@example.com" "Mikkel:mikkel@example.com" "Rasmus:rasmus@example.com" \
+  --extra '{"signers":[{"name":"Mads","email":"mads@example.com","role":"signer","signOrder":0},{"name":"Mikkel","email":"mikkel@example.com","role":"signer","signOrder":1},{"name":"Rasmus","email":"rasmus@example.com","role":"signer","signOrder":1}]}'
+```
+
+### Step 4 — Share the Signing Links
+
+Once complete, the script outputs a signing link for each signer. Share these with the user in a friendly way:
+
+> "Done! Here are the signing links — share these with your signers:
+> - Jane Doe: https://sandbox.penneo.com/signing/XXXXX
+> - John Smith: https://sandbox.penneo.com/signing/XXXXX"
 
 ---
 
@@ -136,16 +160,6 @@ The script will return the overall status and which signers have signed. Transla
 > "Your signing request 'Contract Agreement' is still pending — Mads has signed but Nikita is still waiting to sign."
 
 > "Great news — 'Contract Agreement' has been completed and signed by everyone!"
-
----
-
-### Step 4 — Share the Signing Links
-
-Once complete, the script outputs a signing link for each signer. Share these with the user in a friendly way:
-
-> "Done! Here are the signing links — share these with your signers:
-> - Jane Doe: https://sandbox.penneo.com/signing/XXXXX
-> - John Smith: https://sandbox.penneo.com/signing/XXXXX"
 
 ---
 
@@ -182,6 +196,8 @@ python scripts/python/send-for-signing.py \
 | "redirect to X after signing" | Set on the signer object: `"successUrl": "https://..."` |
 | "redirect to X if they reject" | Set on the signer object: `"failUrl": "https://..."` |
 | "require signers to authenticate" | Set on the signer object: `"accessControl": true` |
+| "let them sign by drawing their signature" | Set on the signer object: `"enableInsecureSigning": true, "insecureSigningMethods": ["draw"]` |
+| "let them sign by typing their name" | Set on the signer object: `"enableInsecureSigning": true, "insecureSigningMethods": ["text"]` |
 | "don't attach the signed doc to emails" | `"disableEmailAttachments": true` |
 | "mark as sensitive data" | `"sensitiveData": true` |
 | "don't notify me when it's done" | `"disableNotificationsOwner": true` |
@@ -270,6 +286,7 @@ For the full OpenAPI specification of the case file creation and job status endp
 | **Auth URL** | `https://sandbox.oauth.penneo.cloud/oauth/token` | `https://login.penneo.com/oauth/token` |
 | **Case File Creation** | `https://sandbox.penneo.com/send/api/v1/casefiles/20251022/create` | `https://app.penneo.com/send/api/v1/casefiles/20251022/create` |
 | **Job Status** | `https://sandbox.penneo.com/send/api/v1/queue/public/status` | `https://app.penneo.com/send/api/v1/queue/public/status` |
+| **List / Check Status** | `https://sandbox.penneo.com/api/v1/casefiles` | `https://app.penneo.com/api/v1/casefiles` |
 
 ⚠️ **Credentials must match the environment.** Sandbox and production use separate OAuth clients and credentials — they are not interchangeable.
 
