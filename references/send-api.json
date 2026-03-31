@@ -1,0 +1,257 @@
+{
+  "openapi": "3.0.0",
+  "info": {
+    "title": "Penneo Case File API",
+    "version": "1.0.0",
+    "description": "API for creating and managing Penneo case files. This API allows you to create case files with documents and signers, upload PDF files, and check the status of asynchronous job processing."
+  },
+  "paths": {
+    "/send/api/v1/queue/public/status": {
+      "post": {
+        "tags": ["Queue Status Check"],
+        "summary": "Check job status by UUID",
+        "operationId": "checkJobStatus",
+        "description": "Retrieves the current status of an asynchronous job by providing the job UUID and payload hash. This endpoint is used to poll for job completion status after submitting a case file creation request. The endpoint is rate-limited to 20 requests per minute per submission. No authentication is required as the UUID and payload hash provide the necessary security.",
+        "requestBody": {
+          "required": true,
+          "description": "Job identification information including UUID and payload hash for verification.",
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["uuid", "payloadHash"],
+                "description": "Request body for checking job status. Both UUID and payloadHash are required for security verification.",
+                "properties": {
+                  "uuid": {
+                    "type": "string",
+                    "format": "uuid",
+                    "example": "123e4567-e89b-12d3-a456-426614174000",
+                    "description": "The UUID of the job to check. This is returned when the job is created."
+                  },
+                  "payloadHash": {
+                    "type": "string",
+                    "example": "3a7bd3e2360a3d485f2a5f4d8e6f1e8b9c6d5e4f3a2b1c0d9e8f7a6b5c4d3e2f",
+                    "description": "The SHA-256 hash of the payload. This is returned when the job is created and is used to verify the request authenticity."
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successfully retrieved the job status.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": ["uuid", "type", "payload", "payloadHash", "jobStatus", "retries", "maxRetries", "createdAt", "updatedAt"],
+                  "description": "Represents an asynchronous job in the queue system.",
+                  "properties": {
+                    "uuid": { "type": "string", "format": "uuid", "description": "Unique identifier for the job" },
+                    "type": { "type": "string", "description": "The type of the queue job (e.g., 'casefile_creation')" },
+                    "jobStatus": {
+                      "type": "string",
+                      "enum": ["pending", "processing", "completed", "failed", "aborted_duplicated"],
+                      "default": "pending",
+                      "description": "Current status of the job."
+                    },
+                    "result": { "type": "object", "nullable": true, "default": null, "description": "The result of the queue job execution, returned as JSON when completed." },
+                    "payload": { "type": "object", "description": "The original payload submitted with the job." },
+                    "payloadHash": { "type": "string", "description": "SHA-256 hash of the payload." },
+                    "errorMessage": { "type": "string", "nullable": true, "default": null, "description": "Error message if the job failed." },
+                    "retries": { "type": "integer", "default": 0 },
+                    "maxRetries": { "type": "integer", "default": 0 },
+                    "createdAt": { "type": "string", "format": "date-time" },
+                    "updatedAt": { "type": "string", "format": "date-time" }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found - The job with the provided UUID and payload hash was not found.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": ["message", "statusCode"],
+                  "properties": {
+                    "message": { "type": "string", "example": "Job not found" },
+                    "statusCode": { "type": "integer", "example": 404 }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/send/api/v1/casefiles/20251022/create": {
+      "post": {
+        "tags": ["Case File Creation"],
+        "summary": "Create a new case file with documents and signers",
+        "operationId": "createCaseFile",
+        "description": "Creates a new case file in Penneo with the specified documents and signers. Accepts multipart/form-data with JSON metadata and PDF files. The case file is created asynchronously — use the returned job UUID to poll for completion.",
+        "parameters": [
+          {
+            "in": "header",
+            "name": "X-Auth-Token",
+            "schema": { "type": "string" },
+            "required": true,
+            "description": "JWT token for authentication."
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "description": "Multipart form data containing the case file configuration and PDF files.",
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "required": ["data", "files"],
+                "properties": {
+                  "data": {
+                    "type": "string",
+                    "description": "JSON string containing the case file configuration. Must include a 'caseFile' property with title, signers array, and documents array.",
+                    "example": "{\"caseFile\":{\"title\":\"Contract Agreement\",\"signers\":[{\"name\":\"John Doe\",\"email\":\"john@example.com\",\"role\":\"signer\"}],\"documents\":[{\"title\":\"Contract Document\",\"name\":\"contract.pdf\"}]}}",
+                    "x-caseFile-schema": {
+                      "required": ["title", "signers", "documents"],
+                      "properties": {
+                        "title": { "type": "string", "maxLength": 1024 },
+                        "language": { "type": "string", "enum": ["en", "da", "sv", "nl", "fr", "fi", "no", "de"] },
+                        "metaData": { "type": "string" },
+                        "reference": { "type": "string" },
+                        "folderId": { "type": "integer" },
+                        "sendAt": { "type": "integer", "description": "Unix timestamp" },
+                        "expireAt": { "type": "integer", "description": "Unix timestamp" },
+                        "sensitiveData": { "type": "boolean" },
+                        "accessControl": { "type": "boolean" },
+                        "visibilityMode": { "type": "integer", "enum": [0, 1], "description": "0 = all docs visible, 1 = role-specific" },
+                        "disableNotificationsOwner": { "type": "boolean" },
+                        "disableEmailAttachments": { "type": "boolean" },
+                        "senderName": { "type": "string", "minLength": 2, "maxLength": 255 },
+                        "signOnMeeting": { "type": "boolean" },
+                        "ccRecipients": {
+                          "type": "array",
+                          "items": {
+                            "required": ["name", "email"],
+                            "properties": {
+                              "name": { "type": "string" },
+                              "email": { "type": "string", "format": "email" },
+                              "storeAsContact": { "type": "boolean" }
+                            }
+                          }
+                        },
+                        "signers": {
+                          "type": "array",
+                          "minItems": 1,
+                          "items": {
+                            "required": ["name"],
+                            "properties": {
+                              "name": { "type": "string" },
+                              "email": { "type": "string", "format": "email" },
+                              "role": { "type": "string", "description": "Role identifier — used to restrict which signers can sign which documents" },
+                              "signOrder": { "type": "integer", "description": "Signing order group. Signers with the same signOrder sign simultaneously. Lower numbers sign first." },
+                              "onBehalfOf": { "type": "string" },
+                              "socialSecurityNumberPlain": { "type": "string" },
+                              "vatin": { "type": "string" },
+                              "ssnType": { "type": "string", "enum": ["legacy", "dk:cpr", "se:pin", "no:nin", "be:nrn", "fi:pic", "sms"] },
+                              "accessControl": { "type": "boolean" },
+                              "enableInsecureSigning": { "type": "boolean", "description": "Must be true to allow insecure signing methods such as draw, text, or image" },
+                              "insecureSigningMethods": {
+                                "type": "array",
+                                "items": { "type": "string", "enum": ["text", "draw", "image"] },
+                                "description": "Allowed insecure signing methods. Requires enableInsecureSigning: true. 'draw' = freehand signature, 'text' = typed name, 'image' = uploaded image."
+                              },
+                              "language": { "type": "string" },
+                              "emailFormat": { "type": "string", "enum": ["text", "html"] },
+                              "emailSubject": { "type": "string", "minLength": 5 },
+                              "emailText": { "type": "string", "minLength": 5 },
+                              "reminderInterval": { "type": "integer", "minimum": 1, "description": "Days between reminders" },
+                              "reminderEmailSubject": { "type": "string", "minLength": 5 },
+                              "reminderEmailText": { "type": "string", "minLength": 5 },
+                              "completedEmailSubject": { "type": "string", "minLength": 5 },
+                              "completedEmailText": { "type": "string", "minLength": 5 },
+                              "successUrl": { "type": "string", "minLength": 5, "description": "Redirect URL after successful signing" },
+                              "failUrl": { "type": "string", "minLength": 5, "description": "Redirect URL if signer rejects" },
+                              "activeAt": { "type": "integer", "description": "Unix timestamp — when the signing request becomes active" },
+                              "expireAt": { "type": "integer", "description": "Unix timestamp — when the signing request expires" },
+                              "storeAsContact": { "type": "boolean" }
+                            }
+                          }
+                        },
+                        "documents": {
+                          "type": "array",
+                          "minItems": 1,
+                          "items": {
+                            "required": ["title", "name"],
+                            "properties": {
+                              "title": { "type": "string", "maxLength": 1024 },
+                              "name": { "type": "string", "description": "Must exactly match the uploaded PDF filename" },
+                              "signable": { "type": "boolean", "default": true, "description": "false = attachment only, not signable" },
+                              "roles": { "type": "array", "items": { "type": "string" }, "description": "Role identifiers that can sign this document" },
+                              "documentOrder": { "type": "integer", "minimum": 0 },
+                              "metaData": { "type": "string" }
+                            }
+                          }
+                        }
+                      }
+                    }
+                  },
+                  "files": {
+                    "type": "array",
+                    "items": { "type": "string", "format": "binary" },
+                    "description": "PDF files to upload. Must match the number and order of documents in the data field."
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Case file creation job successfully queued.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": { "type": "string", "enum": ["handled", "error"], "example": "handled" },
+                    "message": { "type": "string", "example": "Job created" },
+                    "jobs": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "uuid": { "type": "string", "format": "uuid", "description": "Use this to poll job status." },
+                          "payloadHash": { "type": "string", "description": "SHA-256 hash for verification when polling." },
+                          "createdAt": { "type": "string", "format": "date-time" }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request - Invalid input, missing fields, or malformed JSON.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": { "type": "string", "example": "Bad Request" },
+                    "message": { "type": "string", "example": "Invalid JWT token: Invalid token format" },
+                    "statusCode": { "type": "integer", "example": 400 }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

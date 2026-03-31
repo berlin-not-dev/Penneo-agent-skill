@@ -15,7 +15,6 @@
 
 import fs from "fs";
 import path from "path";
-import FormData from "form-data";
 import "dotenv/config";
 
 const ENV = process.env.PENNEO_ENV === "production" ? "production" : "sandbox";
@@ -102,17 +101,15 @@ const form = new FormData();
 form.append("data", JSON.stringify(caseFileData));
 for (const f of files) {
   const resolved = path.resolve(f);
-  form.append("files", fs.createReadStream(resolved), {
-    filename: path.basename(f),
-    contentType: "application/pdf",
-  });
+  const blob = new Blob([fs.readFileSync(resolved)], { type: "application/pdf" });
+  form.append("files", blob, path.basename(f));
 }
 
 console.log(`\nSubmitting "${title}" for signing (${ENV})...`);
 
 const createRes = await fetch(createUrl, {
   method: "POST",
-  headers: { "X-Auth-Token": ACCESS_TOKEN, ...form.getHeaders() },
+  headers: { "X-Auth-Token": ACCESS_TOKEN },
   body: form,
 });
 
