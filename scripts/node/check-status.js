@@ -65,15 +65,20 @@ if (!res.ok) {
 
 const data = await res.json();
 
-const statusLabel = STATUSES[data.status] ?? `Unknown (${data.status})`;
+const caseStatus = STATUSES[data.status] ?? `Unknown (${data.status})`;
+const expire = data.expireAt
+  ? new Date(data.expireAt * 1000).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" })
+  : "—";
+
 console.log(`\nCase File: ${data.title}`);
-console.log(`Status: ${statusLabel}`);
+console.log(`Status: ${caseStatus}`);
+console.log(`Expires: ${expire}`);
 
 if (data.signers?.length) {
   console.log("\nSigners:");
   for (const signer of data.signers) {
     const signerStatus = signer.signingRequest?.status;
-    const statusLabel = SIGNER_STATUSES[signerStatus] ?? `Unknown (${signerStatus})`;
-    console.log(`  ${signer.name}: ${statusLabel}`);
+    const signerStatusLabel = SIGNER_STATUSES[signerStatus] ?? `Unknown (${signerStatus})`;
+    console.log(`  ${signer.name}: ${signerStatusLabel}`);
   }
 }

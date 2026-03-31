@@ -11,6 +11,7 @@ Environment: Set PENNEO_ENV=production for production, defaults to sandbox.
 import os
 import argparse
 import requests
+from datetime import datetime
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -66,14 +67,16 @@ if not res.ok:
 
 data = res.json()
 
-status_label = STATUSES.get(data["status"], f"Unknown ({data['status']})")
-print(f"\nCase File: {data['title']}")
-print(f"Status: {status_label}")
+case_status = STATUSES.get(data["status"], f"Unknown ({data['status']})")
+expire = datetime.fromtimestamp(data["expireAt"]).strftime("%d %b %Y") if data.get("expireAt") else "—"
 
-# Show per-signer signing status
+print(f"\nCase File: {data['title']}")
+print(f"Status: {case_status}")
+print(f"Expires: {expire}")
+
 if data.get("signers"):
     print("\nSigners:")
     for signer in data["signers"]:
         signer_status = signer.get("signingRequest", {}).get("status")
-        status_label = SIGNER_STATUSES.get(signer_status, f"Unknown ({signer_status})")
-        print(f"  {signer['name']}: {status_label}")
+        signer_status_label = SIGNER_STATUSES.get(signer_status, f"Unknown ({signer_status})")
+        print(f"  {signer['name']}: {signer_status_label}")

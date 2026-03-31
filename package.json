@@ -1,0 +1,19 @@
+{
+  "name": "penneo-agent-skill",
+  "version": "1.0.0",
+  "type": "module",
+  "description": "Claude Code agent skill for sending and managing documents via Penneo",
+  "scripts": {
+    "authenticate": "node scripts/node/authenticate.js",
+    "send": "node scripts/node/send-for-signing.js",
+    "list": "node scripts/node/list-casefiles.js",
+    "status": "node scripts/node/check-status.js"
+  },
+  "dependencies": {
+    "dotenv": "^17.3.1",
+    "form-data": "^4.0.5"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}

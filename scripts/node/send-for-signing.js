@@ -86,7 +86,15 @@ const documents = files.map((f) => ({
   name: path.basename(f),
 }));
 
-const extra = extraArg ? JSON.parse(extraArg) : {};
+let extra = {};
+if (extraArg) {
+  try {
+    extra = JSON.parse(extraArg);
+  } catch {
+    console.error("Error: --extra must be valid JSON.");
+    process.exit(1);
+  }
+}
 const caseFileData = { caseFile: { title, signers, documents, ...extra } };
 
 // --- Build multipart/form-data request ---
