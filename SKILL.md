@@ -1,3 +1,10 @@
+---
+name: penneo-agent-skill
+description: Send documents for signing via Penneo, check the status of a case file, and list case files by status or date. Use this skill when the user wants to get a contract or document signed, check who has signed, or get an overview of pending or completed signing requests.
+compatibility: Requires Node.js >=18 or Python 3.11+. Network access to penneo.com (production) or sandbox.penneo.com (sandbox). Credentials configured in a .env file.
+allowed-tools: Bash Read
+---
+
 # Penneo Signing Skill
 
 This skill enables a user to interact with **Penneo** — a document signing platform that creates authentic digital evidence. It supports the following capabilities:

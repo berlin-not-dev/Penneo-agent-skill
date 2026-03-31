@@ -74,7 +74,10 @@ documents = [{"title": Path(f).stem, "name": Path(f).name} for f in args.files]
 case_file = {"title": args.title, "signers": signers, "documents": documents}
 
 if args.extra:
-    extra = json.loads(args.extra)
+    try:
+        extra = json.loads(args.extra)
+    except json.JSONDecodeError as e:
+        raise ValueError(f"--extra must be valid JSON: {e}")
     case_file.update(extra)
 
 case_file_data = {"caseFile": case_file}

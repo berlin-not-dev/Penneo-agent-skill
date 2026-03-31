@@ -17,7 +17,7 @@ import urllib.parse
 import requests
 from pathlib import Path
 from http.server import HTTPServer, BaseHTTPRequestHandler
-from dotenv import load_dotenv
+from dotenv import load_dotenv, set_key
 
 load_dotenv()
 
@@ -115,7 +115,6 @@ print("\nAuthentication successful!")
 
 # Write ACCESS_TOKEN to .env for use by send-for-signing.py
 env_path = Path(__file__).resolve().parent.parent.parent / ".env"
-from dotenv import set_key
 set_key(str(env_path), "ACCESS_TOKEN", token["access_token"])
 print(f"Access token saved to .env")
 

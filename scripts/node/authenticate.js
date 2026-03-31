@@ -124,4 +124,3 @@ if (/^ACCESS_TOKEN=/m.test(envContent)) {
 fs.writeFileSync(envPath, envContent);
 console.log("Access token saved to .env");
 
-export default token.access_token;
