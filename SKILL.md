@@ -1,11 +1,11 @@
 ---
-name: penneo-agent-skill
+name: penneo-skill
 description: Send documents for signing via Penneo, check the status of a case file, and list case files by status or date. Use this skill when the user wants to get a contract or document signed, check who has signed, or get an overview of pending or completed signing requests.
 compatibility: Requires Node.js >=18. Network access to penneo.com (production) or sandbox.penneo.com (sandbox). Credentials configured in a .env file.
 allowed-tools: Bash Read
 ---
 
-# Penneo Signing Skill
+# Penneo Skill
 
 This skill enables a user to interact with **Penneo** — a document signing platform that creates authentic evidence. It supports the following capabilities:
 
@@ -69,7 +69,7 @@ Before doing anything, conversationally collect the following information. Ask n
 **What to ask:**
 - Should this be sent to **sandbox or production**? Confirm explicitly — mistakes here are hard to undo.
 - What is the **title** of the signing request? (e.g. "Employment Contract", "NDA")
-- Which **document(s)** should be sent? Ask the user to provide the file path(s) to the PDF(s).
+- Which **document(s)** should be sent? Ask the user to provide the file path(s). Files must be PDFs.
 - Who are the **signer(s)**? For each signer, collect:
   - Full name
   - Email address
@@ -101,7 +101,7 @@ node scripts/node/send-for-signing.js \
   --sequential
 ```
 
-- `--files` accepts one or more PDF file paths. **Each file must have a unique filename** — duplicate filenames will be rejected by the API.
+- `--files` accepts one or more PDF file paths (PDFs only — other formats are not supported). **Each file must have a unique filename** — duplicate filenames will be rejected by the API.
 - `--signers` accepts one or more `"Full Name:email@example.com"` pairs.
 - `--sequential` is optional — include it if the user wants signers to sign strictly one after another (assigns signOrder 0, 1, 2...).
 
