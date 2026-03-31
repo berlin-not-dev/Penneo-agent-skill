@@ -1,14 +1,14 @@
 # Penneo Agent Skill
 
-A Claude Code skill for sending documents for signing via Penneo, checking signing status, and listing case files.
+An agent skill for sending documents for signing via Penneo, checking signing status, and listing case files.
 
 ## Install
 
-```bash
-git clone https://github.com/berlin-not-dev/Penneo-agent-skill ~/.claude/skills/penneo-agent-skill
-```
+Clone the repository into your agent's skills directory:
 
-Claude Code will pick it up automatically. No restart needed.
+```bash
+git clone https://github.com/berlin-not-dev/Penneo-agent-skill penneo-agent-skill
+```
 
 ## Setup
 
