@@ -13,6 +13,7 @@ This skill enables a user to interact with **Penneo** — a document signing pla
 - **Send documents for signing** — upload PDFs, add signers, and configure casefile and signing settings
 - **Check the status of a case file** — look up a specific case file by ID and see which signers have signed
 - **List and summarise case files** — get an overview of case files filtered by status (pending, completed, rejected, draft, expired) or all at once
+- **Download signed documents** — fetch the signed PDF (or JSON evidence) for any document in a completed case file
 
 Keep all interactions in plain, friendly language — avoid exposing JSON structures, API details, or technical implementation unless the user explicitly asks for them.
 
@@ -51,7 +52,8 @@ scripts/node/
 ├── authenticate.js       # OAuth flow — opens browser, captures token
 ├── send-for-signing.js   # Submits documents for signing and polls for completion
 ├── list-casefiles.js     # Lists case files with flexible filtering and pagination
-└── check-status.js       # Checks the status of a single case file by ID
+├── check-status.js       # Checks the status of a single case file by ID
+└── get-documents.js      # Downloads signed documents from a case file
 ```
 
 A detailed OpenAPI reference for the send endpoint — including the full signer schema, signing methods, and advanced options — is available at [`references/send-api.json`](references/send-api.json). Consult it when constructing `--extra` JSON for advanced use cases.
@@ -236,6 +238,29 @@ Use this table to translate user requests into the right `--filter` combinations
 
 ---
 
+## Downloading Signed Documents
+
+When the user wants to download the signed document(s) from a case file, run the get-documents script with the case file ID:
+
+```bash
+node scripts/node/get-documents.js --casefile-id 1262730
+node scripts/node/get-documents.js --casefile-id 1262730 --format json
+node scripts/node/get-documents.js --casefile-id 1262730 --output-dir ./downloads
+```
+
+- `--format` is optional — defaults to `pdf`. Use `json` to get the signing evidence document instead.
+- `--output-dir` is optional — defaults to the current directory.
+
+The script fetches the document IDs from the case file, then downloads each document's content. Files are saved locally using the document title as the filename.
+
+Confirm with the user where they'd like the files saved if they haven't specified a location. Translate the output into friendly language:
+
+> "Done! I've saved the signed documents to your downloads folder:
+> - contract.pdf
+> - appendix.pdf"
+
+---
+
 ## API Reference
 
 For the full OpenAPI specification of the case file creation and job status endpoints, see [references/send-api.json](references/send-api.json).
@@ -252,6 +277,7 @@ For the full OpenAPI specification of the case file creation and job status endp
 | **Case File Creation** | `https://sandbox.penneo.com/send/api/v1/casefiles/20251022/create` | `https://app.penneo.com/send/api/v1/casefiles/20251022/create` |
 | **Job Status** | `https://sandbox.penneo.com/send/api/v1/queue/public/status` | `https://app.penneo.com/send/api/v1/queue/public/status` |
 | **List / Check Status** | `https://sandbox.penneo.com/api/v1/casefiles` | `https://app.penneo.com/api/v1/casefiles` |
+| **Document Content** | `https://sandbox.penneo.com/api/v3/documents` | `https://app.penneo.com/api/v3/documents` |
 
 ⚠️ **Credentials must match the environment.** Sandbox and production use separate OAuth clients and credentials — they are not interchangeable.
 
