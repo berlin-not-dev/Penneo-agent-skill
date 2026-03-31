@@ -7,10 +7,11 @@ allowed-tools: Bash Read
 
 # Penneo Signing Skill
 
-This skill enables a user to interact with **Penneo** — a document signing platform that creates authentic digital evidence. It supports the following capabilities:
+This skill enables a user to interact with **Penneo** — a document signing platform that creates authentic evidence. It supports the following capabilities:
 
-- **Send documents for signing** — upload PDFs, add signers, and optionally enforce a signing order
-- **Check signing status** — look up the current status of a specific case file and see which signers have signed
+- **Authenticate with Penneo** — log in via OAuth to obtain an access token, required before any other action
+- **Send documents for signing** — upload PDFs, add signers, and configure casefile and signing settings
+- **Check the status of a case file** — look up a specific case file by ID and see which signers have signed
 - **List and summarise case files** — get an overview of case files filtered by status (pending, completed, rejected, draft, expired) or all at once
 
 Keep all interactions in plain, friendly language — avoid exposing JSON structures, API details, or technical implementation unless the user explicitly asks for them.
