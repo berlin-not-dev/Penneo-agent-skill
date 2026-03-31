@@ -1,7 +1,7 @@
 ---
 name: penneo-agent-skill
 description: Send documents for signing via Penneo, check the status of a case file, and list case files by status or date. Use this skill when the user wants to get a contract or document signed, check who has signed, or get an overview of pending or completed signing requests.
-compatibility: Requires Node.js >=18 or Python 3.11+. Network access to penneo.com (production) or sandbox.penneo.com (sandbox). Credentials configured in a .env file.
+compatibility: Requires Node.js >=18. Network access to penneo.com (production) or sandbox.penneo.com (sandbox). Credentials configured in a .env file.
 allowed-tools: Bash Read
 ---
 
@@ -44,20 +44,14 @@ PENNEO_CLIENT_SECRET=your_client_secret
 
 ## Scripts
 
-Ready-made scripts are provided for both Node.js and Python. Always use these — never generate new code to handle authentication, casefile creation, listing, or status checking.
+Ready-made Node.js scripts are provided. Always use these — never generate new code to handle authentication, casefile creation, listing, or status checking.
 
 ```
-scripts/
-├── node/
-│   ├── authenticate.js       # OAuth flow — opens browser, captures token
-│   ├── send-for-signing.js   # Submits documents for signing and polls for completion
-│   ├── list-casefiles.js     # Lists case files with flexible filtering and pagination
-│   └── check-status.js       # Checks the status of a single case file by ID
-├── python/
-│   ├── authenticate.py       # OAuth flow — opens browser, captures token
-│   ├── send-for-signing.py   # Submits documents for signing and polls for completion
-│   ├── list-casefiles.py     # Lists case files with flexible filtering and pagination
-│   └── check-status.py       # Checks the status of a single case file by ID
+scripts/node/
+├── authenticate.js       # OAuth flow — opens browser, captures token
+├── send-for-signing.js   # Submits documents for signing and polls for completion
+├── list-casefiles.js     # Lists case files with flexible filtering and pagination
+└── check-status.js       # Checks the status of a single case file by ID
 ```
 
 A detailed OpenAPI reference for the send endpoint — including the full signer schema, signing methods, and advanced options — is available at [`references/send-api.json`](references/send-api.json). Consult it when constructing `--extra` JSON for advanced use cases.
@@ -89,11 +83,7 @@ Example of how to ask:
 Run the authentication script to log the user in to Penneo:
 
 ```bash
-# Node.js
 node scripts/node/authenticate.js
-
-# Python
-python scripts/python/authenticate.py
 ```
 
 This will open the user's browser for login. Once completed, the access token is automatically saved to the `.env` file and will be picked up by the send-for-signing script. Let the user know what is happening in plain language:
@@ -104,15 +94,7 @@ This will open the user's browser for login. Once completed, the access token is
 Once authenticated, run the send-for-signing script with the collected information:
 
 ```bash
-# Node.js
 node scripts/node/send-for-signing.js \
-  --title "Contract Agreement" \
-  --files "./contract.pdf" "./appendix.pdf" \
-  --signers "Jane Doe:jane@example.com" "John Smith:john@example.com" \
-  --sequential
-
-# Python
-python scripts/python/send-for-signing.py \
   --title "Contract Agreement" \
   --files "./contract.pdf" "./appendix.pdf" \
   --signers "Jane Doe:jane@example.com" "John Smith:john@example.com" \
@@ -126,7 +108,6 @@ python scripts/python/send-for-signing.py \
 **Partial order** (e.g. one person signs first, then the rest sign simultaneously): use `--extra` to override the signers array with custom `signOrder` values. Signers with the same `signOrder` can sign at the same time:
 
 ```bash
-# Node.js — Mads signs first (order 0), then Mikkel and Rasmus simultaneously (order 1)
 node scripts/node/send-for-signing.js \
   --title "Contract" \
   --files "./contract.pdf" \
@@ -149,11 +130,7 @@ Once complete, the script outputs a signing link for each signer. Share these wi
 If the user asks about the status of a signing request, run the check-status script with the case file ID:
 
 ```bash
-# Node.js
 node scripts/node/check-status.js --casefile-id 1262730
-
-# Python
-python scripts/python/check-status.py --casefile-id 1262730
 ```
 
 The script will return the overall status and which signers have signed. Translate the output into friendly language:
@@ -169,15 +146,7 @@ The script will return the overall status and which signers have signed. Transla
 Do **not** ask about these upfront. Only use them if the user specifically requests it. Pass them via `--extra` as a JSON string merged into the case file.
 
 ```bash
-# Node.js
 node scripts/node/send-for-signing.js \
-  --title "Contract" \
-  --files "./contract.pdf" \
-  --signers "Jane Doe:jane@example.com" \
-  --extra '{"language":"en","ccRecipients":[{"name":"Legal Team","email":"legal@company.com"}]}'
-
-# Python
-python scripts/python/send-for-signing.py \
   --title "Contract" \
   --files "./contract.pdf" \
   --signers "Jane Doe:jane@example.com" \
@@ -212,15 +181,10 @@ python scripts/python/send-for-signing.py \
 When the user asks for an overview of their case files, run the list-casefiles script. It supports flexible filtering via `--status` and `--filter key=value` (repeatable). Pagination is handled automatically.
 
 ```bash
-# Node.js examples
 node scripts/node/list-casefiles.js
 node scripts/node/list-casefiles.js --status pending
 node scripts/node/list-casefiles.js --status completed --filter sort=-created
 node scripts/node/list-casefiles.js --filter title=Contract --filter createdAfter=1735689600
-
-# Python examples
-python scripts/python/list-casefiles.py --status pending
-python scripts/python/list-casefiles.py --filter sort=-created --filter completedAfter=1735689600
 ```
 
 Present results conversationally — never show raw script output. For example:
